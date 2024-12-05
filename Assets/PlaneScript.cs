@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -10,12 +11,12 @@ using UnityEngine.UIElements;
 public class PlaneScript : MonoBehaviour {
 
     Rigidbody rb;
-    AudioSource audioSource;
+    AudioSource[] audioSources;
     
 
     private void Start() {
         rb = GetComponent<Rigidbody>();
-        audioSource = GetComponent<AudioSource>();
+        audioSources = GetComponents<AudioSource>();
         
     }
 
@@ -30,12 +31,15 @@ public class PlaneScript : MonoBehaviour {
     [SerializeField] TextMeshProUGUI hud;
     [SerializeField] TextMeshProUGUI altWarn;
 
+    [SerializeField] TextMeshProUGUI timerText;
+
     private float throttle;
     private float roll;
     private float pitch;
     private float yaw;
-
     private float numHits = 0;
+
+    private float timeAbove = 0f;
 
     
 
@@ -52,15 +56,15 @@ public class PlaneScript : MonoBehaviour {
 
 
         if (Input.GetKey(KeyCode.Space)) {
-            if(!audioSource.isPlaying){
-                audioSource.Play();
+            if(!audioSources[0].isPlaying){
+                audioSources[0].Play();
             }
             engine1.Play();
             engine2.Play();
 
             throttle += throttleIncrement;
         } else  {
-            audioSource.Stop();
+            audioSources[0].Stop();
             throttle -= throttleIncrement;
             engine1.Stop();
             engine2.Stop();
@@ -74,16 +78,37 @@ public class PlaneScript : MonoBehaviour {
         HandleInputs();
         updateHud();
         CheckAltitude();
+
     }
 
     private void CheckAltitude() {
-
-
-         if (transform.position.y > 100) {
+         if (transform.position.y > 110){
             altWarn.text = "Too High";
-           
+            timeAbove += Time.deltaTime;
+            timerText.text = timeAbove.ToString("F2");
+
+            if(timeAbove > 3f) {
+                ReloadLevel();
+            }
+
+            if(!audioSources[1].isPlaying){
+                audioSources[1].Play();
+            }
+
             
          }
+         else {
+            altWarn.text = "";
+            timeAbove = 0f;
+            timerText.text = "";
+            audioSources[1].Stop();
+         }
+
+         checkTimer();
+    }
+    
+    private void checkTimer() {
+
     }
 
     private void FixedUpdate() {
@@ -93,7 +118,7 @@ public class PlaneScript : MonoBehaviour {
         rb.AddTorque(-transform.forward * roll * responseModifier);
 
         rb.AddForce(Vector3.up * rb.velocity.magnitude * lift);
-        
+ 
     }
 
     private void updateHud() {
